@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="PT-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EBILOCK - GERÊNCIA</title>
+  <style>
+    /* RESET BÁSICO */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --panel-bg: #B8B8B8;
+      --row-bg: #A0A0A0;
+      --text-gold: #E8E8AD;
+      --border-dark: #808080;
+      --border-light: #ffffff;
+    }
+
+    body {
+      background-color: #c1ccb9;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    /* CONTAINER PRINCIPAL */
+    .main-frame {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* ESTILO DOS BOTÕES (Mais compactos) */
+    .tab {
+      background: #C0C0C0;
+      border: 1px outset white;
+      padding: 2px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tab:active {
+      border-style: inset;
+    }
+
+    /* BARRAS DE MENU - MAIS ESTREITAS */
+    .top-bar,
+    .mid-bar,
+    .down-bar {
+      width: 100%;
+      min-height: 26px;
+      background: #6b7a7c;
+      border-bottom: 2px solid #3f4c45;
+      display: flex;
+      align-items: center;
+      padding: 2px 6px;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .mid-bar,
+    .down-bar {
+      background: #c0c9ca;
+    }
+
+    .mini-eventos {
+      font-size: 11px;
+      padding: 0 6px;
+    }
+
+    .spacer {
+      flex-grow: 1;
+    }
+
+    /* CONSOLE DE EVENTOS */
+    .event-container {
+      /* display: none; */
+      display: flex;
+      width: 100%;
+      height: 18vh;
+      min-height: 110px;
+      background-color: var(--panel-bg);
+      border: 2px inset var(--border-light);
+      font-family: 'Courier New', Courier, monospace;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* BARRA DE ROLAGEM ESQUERDA ESPECÍFICA DO CONSOLE */
+    .scrollbar-track {
+      width: 25px;
+      flex-shrink: 0;
+      background-color: #C0C0C0;
+      border-right: 2px solid var(--border-dark);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+    }
+
+    .scroll-arrow,
+    .scroll-thumb {
+      width: 19px;
+      background: #C0C0C0;
+      border: 2px outset white;
+      cursor: pointer;
+      text-align: center;
+      font-size: 10px;
+      user-select: none;
+    }
+
+    .scroll-thumb {
+      height: 25px;
+    }
+
+    /* CONTEÚDO DA TABELA DE LOGS */
+    .event-content {
+      flex-grow: 1;
+      overflow-y: auto;
+      background-color: var(--row-bg);
+      scrollbar-width: none;
+    }
+
+    .event-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    .event-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .event-row {
+      border-bottom: 1px solid #404040;
+      color: var(--text-gold);
+      font-size: clamp(9px, 1vw, 12px);
+    }
+
+    .event-row td {
+      padding: 2px 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-date {
+      width: 200px;
+    }
+
+    .col-ind {
+      width: 50px;
+    }
+
+    .col-desc {
+      width: auto;
+    }
+
+    .col-dom {
+      width: 150px;
+      text-align: right;
+    }
+
+    .col-cdv {
+      width: 150px;
+      text-align: right;
+    }
+
+    /* VIEWPORT DO PAINEL PRINCIPAL */
+    .main-content {
+      width: 100%;
+      background: #c1ccb9;
+      padding: 6px;
+      flex-grow: 1;
+      overflow: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* AMBIENTE DE OPERAÇÃO ADAPTÁVEL */
+    .operation-panel {
+      background: #c1ccb9;
+      padding: 6px 12px;
+      display: flex;
+      /* display: none; */
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      min-height: 80px;
+      height: auto;
+    }
+
+    /* SINÓTICO / VIEWPORT EBILOCK */
+    .ebilock-viewport {
+      position: relative;
+      background-color: #c1ccb9;
+      flex-grow: 1;
+      min-height: 1000px;
+      /* Expandido para dar folga vertical às plaquetas */
+      width: 100%;
+    }
+
+    /* SCROLLER ESTILO RETRÔ DO MAIN-CONTENT */
+    .main-content::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+
+    .main-content::-webkit-scrollbar-track {
+      background: #dfdfdf;
+      box-shadow: inset 1px 1px 0 #808080;
+    }
+
+    .main-content::-webkit-scrollbar-thumb {
+      background: #c0c0c0;
+      border: 1px outset #fff;
+    }
+
+    /* BLOCOS DE GRUPO (OPERAÇÃO / MANUTENÇÃO) */
+    .group-box {
+      border: 2px solid white;
+      border-top: 1px solid #888;
+      position: relative;
+      padding: 12px 8px 4px 8px;
+      display: flex;
+      gap: 6px;
+      min-width: 110px;
+    }
+
+    .group-label {
+      background: #c1ccb9;
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0 6px;
+      font-size: 10px;
+      font-weight: bold;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    /* BOTÕES DE OPERAÇÃO */
+    .btn-op {
+      background: #004058;
+      color: white;
+      border: 2px outset #666;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-op:active {
+      border-style: inset;
+    }
+
+    /* TÍTULO DO TRECHO */
+    .painel-titulo {
+      width: auto;
+      min-width: 280px;
+      max-width: 420px;
+      min-height: 28px;
+      padding: 4px 10px;
+      background: linear-gradient(to right, #d4dfd0 0%, #bdccb8 50%, #d4dfd0 100%);
+      border: 2px solid #2f3a35;
+      box-shadow: inset 1px 1px 0px #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    /* MODO CTC */
+    .modo-ctc-container {
+      background-color: #7395AE;
+      border: 2px solid #455A64;
+      padding: 2px 4px;
+      text-align: center;
+      font-size: 10px;
+    }
+
+    .modo-ctc-status {
+      background-color: #000080;
+      color: var(--text-gold);
+      font-size: 12px;
+      padding: 1px 8px;
+      border: 2px inset #FFF;
+    }
+
+    /* PLACA E MÓDULOS SCADA */
+    .scada-module {
+      position: absolute;
+      display: inline-flex;
+      flex-direction: column;
+      width: 80px;
+      background-color: #fff9f9;
+      border: 2px solid #333;
+    }
+
+    .scada-module .module-top {
+      height: 30px;
+      background-color: #ffffff;
+      border-bottom: 2px solid #444;
+      border-top: 2px solid #ddd;
+    }
+
+    .scada-module .module-bottom {
+      display: flex;
+      height: 40px;
+    }
+
+    .scada-module .module-side {
+      flex: 1;
+      background-color: #696969;
+      border-top: 2px solid #555;
+    }
+
+    .plate {
+      position: absolute;
+      background: #d2cdb5;
+      border-bottom: 4px solid #0b5d35;
+      border-left: 2px solid #385443;
+      border-right: 2px solid #385443;
+      height: 30px;
+      transform: skewX(-15deg);
+    }
+
+    /* WORKSTATIONS E LABELS RETRÔ */
+    .workstation {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .monitors-wrapper {
+      display: flex;
+      gap: 2px;
+      z-index: 2;
+    }
+
+    .crt-monitor {
+      width: 44px;
+      height: 38px;
+      background: #c0c0c0;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.8);
+      padding: 4px;
+    }
+
+    .crt-screen {
+      width: 100%;
+      height: 100%;
+      background: #6385ff;
+      border-top: 2px solid #404040;
+      border-left: 2px solid #404040;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+    }
+
+    .desktop-base {
+      width: 68px;
+      height: 16px;
+      background: #c0c0c0;
+      border-top: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-right: 2px solid #404040;
+      border-bottom: 2px solid #404040;
+      box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.8);
+      margin-top: -2px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .floppy-drive {
+      width: 24px;
+      height: 4px;
+      background: #000000;
+      border-bottom: 1px solid #ffffff;
+      border-right: 1px solid #ffffff;
+    }
+
+    .power-button {
+      width: 4px;
+      height: 4px;
+      background: #404040;
+      border-bottom: 1px solid #ffffff;
+      border-right: 1px solid #ffffff;
+    }
+
+    /* Plaquetas de identificação das Workstations */
+    .info-workstation {
+      position: absolute;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      font-size: 11px;
+      color: #000000;
+      font-style: normal;
+      text-align: center;
+    }
+
+    /* WRAPPER PRINCIPAL PARA CENTRALIZAÇÃO */
+    /* CENTRALIZAÇÃO TOTAL */
+    .recreacao-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      width: 100px;
+      overflow: hidden;
+    }
+
+    /* ESTRUTURA DO MÓDULO */
+    .modulo-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    /* TRILHOS SUPERIORES */
+    .trilhos-wrapper {
+      display: flex;
+      justify-content: space-between;
+      width: calc(50px + 10px);
+      /* Nova largura do front (50px) + profundidade (10px) */
+      margin-bottom: 0px;
+      overflow: visible;
+    }
+
+    .trilho {
+      width: 3px;
+      height: 25px;
+      /* Reduzido de 80px */
+      background-color: black;
+      border-radius: 2px;
+    }
+
+    /* CORPO DO MÓDULO */
+    .corpo-wrapper {
+      display: flex;
+      gap: 0;
+      align-items: flex-start;
+      overflow: visible;
+    }
+
+    /* FACE FRONTAL */
+    .modulo-front {
+      position: relative;
+      width: 50px;
+      /* Reduzido de 140px */
+      height: 135px;
+      /* Reduzido de 350px */
+      background-color: #ccc;
+      border: 2px solid black;
+      /* Linha mais fina para o tamanho menor */
+      border-radius: 0 0 5px 5px;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+
+    /* COMPONENTES DO FRONT */
+    .janela-preta {
+      width: 40px;
+      /* Reduzido de 120px */
+      height: 12px;
+      /* Reduzido de 30px */
+      background-color: #111;
+      margin-top: 8px;
+      /* Margens compactadas */
+      margin-bottom: 8px;
+    }
+
+    /* PADRÃO DE MALHA REPETITIVO */
+    .malha {
+      width: 40px;
+      /* Reajustado o raio do gradiente para micro-bolinhas */
+      background-image: repeating-radial-gradient(circle, #333 0, #333 0.5px, transparent 0.5px, transparent 2px);
+      background-color: #999;
+      background-size: 3px 3px;
+      /* Bolinhas menores para manter a proporção */
+      background-position: center center;
+    }
+
+    .malha-superior {
+      height: 22px;
+      /* Reduzido de 60px */
+    }
+
+    .malha-inferior {
+      height: 70px;
+      /* Ajustado para preencher o restante do espaço inferior */
+      margin-top: 6px;
+    }
+
+    /* FACE LATERAL (PROFUNDIDADE VISÍVEL) */
+    .modulo-side {
+      width: 10px;
+      /* Reduzido de 20px */
+      height: 135px;
+      /* Mesma altura do front */
+      background-color: #555;
+      border-right: 2px solid black;
+      border-top: 2px solid black;
+      transform: skewY(15deg);
+      transform-origin: left top;
+      margin-top: -1px;
+      /* Correção de alinhamento devido ao skew */
+    }
+
+    /* BUSES DE CONEXÃO (HUBS) */
+    .bus {
+      position: absolute;
+      height: 12px;
+      background: var(--text-gold);
+      border: 2px solid #64604d;
+    }
+
+    .wire-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wire-branch {
+      stroke: #111a14;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .btn-os {
+      background-color: #000;
+      color: #fdfcfc;
+      border: 2px outset #666;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* ESTILO DO COMPONENTE "Port Server" ESTILO SCADA RETRÔ */
+    .port-server-box {
+      background-color: #d4d0c8;
+      /* Cinza industrial clássico */
+      color: #000000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: bold;
+      padding: 6px 20px;
+      text-align: center;
+      letter-spacing: 0.5px;
+
+      /* Borda externa escura */
+      border: 2px solid #404040;
+
+      /* Efeito de Relevo 3D Chanfrado (Brilho no topo/esquerda, sombra embaixo/direita) */
+      box-shadow:
+        inset 2px 2px 0px #ffffff,
+        inset -2px -2px 0px #888888;
+
+      /* Mantém o tamanho fixo ou adaptável */
+      min-width: 120px;
+      box-sizing: border-box;
+      display: inline-block;
+    }
+
+    /* ESTILO DO COMPONENTE "DIPUS" COM EFEITO 3D RETRÔ */
+    /* Container que agrupa as linhas */
+    .scada-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      /* Distância vertical entre os pares */
+    }
+
+    /* Linha que une o par de dispositivos */
+    .device-row {
+      display: flex;
+      align-items: center;
+    }
+
+    /* ========================================== */
+    /* COMPONENTE 1: BLCO "DIPUS"                 */
+    /* ========================================== */
+    .dipus-box {
+      position: relative;
+      width: 75px;
+      height: 24px;
+    }
+
+    /* Face Frontal */
+    .dipus-box .front {
+      position: absolute;
+      inset: 0;
+      background-color: #d4d0c8;
+      /* Cinza industrial */
+      border: 1.5px solid #1a1a1a;
+      color: #1111cc;
+      /* Azul clássico */
+      font-family: 'Arial Black', Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+    }
+
+    /* Face Superior */
+    .dipus-box .top {
+      position: absolute;
+      top: -7px;
+      left: 4px;
+      width: 75px;
+      height: 7px;
+      background-color: #ffffff;
+      /* Brilho superior */
+      border: 1.5px solid #1a1a1a;
+      border-bottom: none;
+      transform: skewX(-30deg);
+      z-index: 2;
+      box-sizing: border-box;
+    }
+
+    /* Face Lateral Direita */
+    .dipus-box .side {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 4px;
+      height: 24px;
+      background-color: #888888;
+      /* Sombra lateral */
+      border: 1.5px solid #1a1a1a;
+      border-left: none;
+      transform: skewY(-30deg);
+      z-index: 1;
+      box-sizing: border-box;
+    }
+
+    /* ========================================== */
+    /* LINHA DE CONEXÃO                           */
+    /* ========================================== */
+    .connect-line {
+      height: 2px;
+      background-color: #404040;
+      width: 35px;
+      /* Comprimento do fio */
+      z-index: 0;
+    }
+
+    /* ========================================== */
+    /* COMPONENTE 2: RACK / MODEM                 */
+    /* ========================================== */
+    .rack-device {
+      position: relative;
+      width: 85px;
+      height: 24px;
+    }
+
+    /* Face Frontal Dividida */
+    .rack-device .front {
+      position: absolute;
+      inset: 0;
+      border: 1.5px solid #1a1a1a;
+      display: flex;
+      z-index: 3;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    /* Painel de Ventilação (Esquerda) */
+    .rack-device .vent-panel {
+      width: 55%;
+      background-color: #9c9c9c;
+      border-right: 1.5px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 4px;
+      box-sizing: border-box;
+    }
+
+    .rack-device .vent-panel span {
+      width: 2px;
+      height: 12px;
+      background-color: #2b2b2b;
+    }
+
+    /* Painel do Display LCD (Direita) */
+    .rack-device .display-panel {
+      width: 45%;
+      background-color: #10b510;
+      /* Verde display ativo */
+      color: #003300;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    /* Face Superior do Rack */
+    .rack-device .top {
+      position: absolute;
+      top: -7px;
+      left: 4px;
+      width: 85px;
+      height: 7px;
+      background-color: #3a5f73;
+      /* Azul escuro/Chassis */
+      border: 1.5px solid #1a1a1a;
+      border-bottom: none;
+      transform: skewX(-30deg);
+      z-index: 2;
+      box-sizing: border-box;
+    }
+
+    /* Face Lateral do Rack */
+    .rack-device .side {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 4px;
+      height: 24px;
+      background-color: #223a47;
+      /* Sombra do chassis */
+      border: 1.5px solid #1a1a1a;
+      border-left: none;
+      transform: skewY(-30deg);
+      z-index: 1;
+      box-sizing: border-box;
+    }
+
+    /* MOLDEM EBILOCK */
+    /* Dispositivo Central Horizontal 2.5D */
+    .modem-device {
+      position: absolute;
+      left: 185px;
+      top: 45px;
+      width: 80px;
+      height: 20px;
+      background-color: #d4d0c8;
+      border: 1.5px solid #000;
+      box-sizing: border-box;
+      z-index: 2;
+    }
+
+    /* Topo do modem */
+    .modem-device::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: -2px;
+      width: 100%;
+      height: 4px;
+      background-color: #a6a29a;
+      border: 1.5px solid #000;
+      border-bottom: none;
+      transform: skewX(-45deg);
+    }
+
+    /* Lateral do modem */
+    .modem-device::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      right: -6px;
+      width: 4px;
+      height: 100%;
+      background-color: #7d7973;
+      border: 1.5px solid #000;
+      border-left: none;
+      transform: skewY(-45deg);
+    }
+
+    /* Detalhes frontais do modem */
+    .modem-front {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      padding-left: 4px;
+      gap: 4px;
+    }
+
+    .modem-led {
+      width: 3px;
+      height: 3px;
+      background-color: #000;
+      border-radius: 50%;
+    }
+
+    .modem-line {
+      width: 12px;
+      height: 2px;
+      background-color: #000;
+      margin-left: auto;
+      margin-right: 4px;
+    }
+
+    .scada-label {
+      position: absolute;
+      font-size: 13px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    .status-panel {
+      width: 150px;
+      height: 180px;
+      background-color: #334C57;
+      /* Fundo azul escuro do painel */
+      padding: 15px;
+      color: white;
+      border: 2px solid black;
+      border-radius: 5px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+      box-shadow: inset 1px 1px 0 white, inset -1px -1px 0 black;
+    }
+
+    .white-text {
+      color: white;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .status-header {
+      margin-bottom: 5px;
+    }
+
+    .led-panel {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #b8b8b8 40%, #555 100%);
+      border: 1px solid black;
+    }
+
+    .status-item {
+      display: flex;
+      width: 100%;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .status-item .led-panel {
+      margin-left: 10px;
+    }
+
+    .fan-status {
+      display: grid;
+      grid-template-areas: "b c" "a a";
+      gap: 5px;
+      justify-items: center;
+      margin-top: 5px;
+    }
+
+    .led-fan-1 {
+      grid-area: b;
+      flex-direction: row-reverse;
+    }
+
+    .led-fan-2 {
+      grid-area: c;
+      flex-direction: row-reverse;
+    }
+
+    .led-fan-3 {
+      grid-area: a;
+      flex-direction: row-reverse;
+    }
+
+    .fan-status .text {
+      color: white;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+
+    /* MICROLOCK - HUB DE CONEXÃO */
+    /* Moldura interna reduzida (de 400px para 260px) */
+    .diag-panel {
+      background-color: #b5b5b5;
+      border: 2px solid #4a4a4a;
+      border-right-color: #ffffff;
+      border-bottom-color: #ffffff;
+      box-shadow: inset 1px 1px 0px #000, inset -1px -1px 0px #888;
+      padding: 10px 15px 15px 15px;
+      width: 260px;
+      box-sizing: border-box;
+    }
+
+    /* Título do Painel reduzido */
+    .panel-title {
+      font-size: 10px;
+      font-weight: bold;
+      color: #000;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* Grid compactada */
+    .diag-grid {
+      display: grid;
+      grid-template-columns: 60px repeat(3, 1fr);
+      gap: 6px 8px;
+      align-items: center;
+    }
+
+    /* Cabeçalhos reduzidos */
+    .header-cell {
+      font-size: 9px;
+      font-weight: normal;
+      color: #000;
+      text-align: center;
+    }
+
+    /* Tags da esquerda reduzidas */
+    .label-cell {
+      font-size: 10px;
+      font-weight: bold;
+      color: #000;
+      text-align: left;
+    }
+
+    .led-cell {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* LED reduzido (de 20px para 12px) com os efeitos 3D preservados */
+    .led-red {
+      width: 12px;
+      height: 12px;
+      border: 1px solid #1a1a1a;
+      background: radial-gradient(circle at 35% 35%, #b8b8b8 20%, #555 93%, #1a1a1a 90%);
+      box-shadow:
+        inset -1px -1px 2px rgba(0, 0, 0, 0.8),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.4),
+        0px 1px 2px rgba(0, 0, 0, 0.3);
+      border-radius: 50%;
+    }
+
+    /* BLOCOS IPU 1  */
+    .espelhado {
+      transform: scaleX(-1);
+    }
+
+    /* Desvira apenas os textos para que continuem legíveis */
+    .texto-corrigido {
+      transform: scaleX(-1);
+      display: inline-block;
+    }
+
+    .painel-container {
+      display: flex;
+      padding: 20px 40px 20px 0;
+      position: relative;
+    }
+
+
+    .linhas-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .linha {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bloco {
+      background-color: #1b3b4b;
+      /* Azul escuro do painel */
+      color: #fff;
+      border: 1px solid #102633;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 15px;
+      min-height: 55px;
+      font-size: 11px;
+    }
+
+    .bloco-oc {
+      width: 100px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .bloco-energia {
+      width: 160px;
+    }
+
+    .bloco-vent {
+      width: 130px;
+    }
+
+    .titulo-bloco {
+      margin-bottom: 10px;
+      color: #e0e6ed;
+    }
+
+    .luz {
+      width: 16px;
+      height: 16px;
+      background-color: #ffea00;
+      border-radius: 50%;
+      border: 2px solid #333;
+      /* Efeito 3D de botão/LED aceso */
+      box-shadow: inset -3px -3px 5px #b8860b, 1px 1px 2px rgba(0, 0, 0, 0.6);
+      position: relative;
+      z-index: 2;
+
+    }
+
+    .grupo-ipu {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 80px;
+      justify-content: center;
+    }
+
+    .item-ipu {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #333;
+      font-weight: bold;
+      position: relative;
+    }
+
+    /* Linha cinza conectando IPU ao Bloco OC */
+    .item-ipu::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 12px;
+      /* Estende até a barra lateral */
+      width: 80px;
+      /* Atravessa o IPU e chega no Bloco OC */
+      height: 2px;
+      background-color: #666;
+      z-index: -1;
+    }
+
+    .layout-luzes {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .coluna-luzes {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .coluna-textos {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 11px;
+      color: #e0e6ed;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="main-frame">
+    <div class="top-bar">
+      <button class="tab">Sinotico</button>
+      <button class="tab">Alarme</button>
+      <button class="tab">Eventos</button>
+      <button class="tab">Sistema</button>
+      <button class="tab">Q.Avisos</button>
+      <button class="tab">T.H.</button>
+      <button class="tab">Dominio</button>
+      <button class="tab">Turno</button>
+      <div class="spacer"></div>
+      <button class="tab" style="background: #e080b6;">Silencia</button>
+      <button class="tab" style="background: #e0e080;">Auxílio</button>
+    </div>
+
+    <div class="mid-bar">
+      <button class="tab">Alarmes</button>
+      <button class="tab">Relatório</button>
+      <button class="tab">Lista</button>
+      <div class="mini-eventos"><b>Mini eventos</b></div>
+      <div class="spacer"></div>
+      <button class="tab" style="background: #252398; color: white;">Consulta</button>
+      <button class="tab" style="background: #e0e080;">Fecha</button>
+    </div>
+
+    <div class="event-container">
+      <div class="scrollbar-track">
+        <div id="scrollUp" class="scroll-arrow">▲</div>
+        <div id="scrollThumb" class="scroll-thumb"></div>
+        <div id="scrollDown" class="scroll-arrow">▼</div>
+      </div>
+      <div id="eventContent" class="event-content">
+        <table class="event-table">
+          <tbody id="eventBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="down-bar">
+      <div class="spacer"></div>
+      <button class="tab" style="background: #8db7bd;">Auxílio</button>
+      <button class="tab" style="background: #ffee00;">Fecha</button>
+    </div>
+
+    <div class="main-content">
+      <div class="operation-panel">
+        <div class="group-box">
+          <span class="group-label">OPERAÇÃO</span>
+          <button class="btn-op">BAS</button>
+          <button class="btn-op">LUZ</button>
+        </div>
+
+        <div class="painel-titulo">
+          Linhas 11 e 12 - Trecho Ebilock Bras e Luz
+        </div>
+
+        <div class="group-box">
+          <span class="group-label">MANUTENÇÃO</span>
+          <button class="btn-op">BAS</button>
+          <button class="btn-op">LUZ</button>
+        </div>
+
+        <div class="group-box">
+          <span class="group-label">DIAG</span>
+          <button class="btn-op" style="margin-left: 10px;">DIAG</button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="btn-op" style="background-color: #7dada0; color:#252398; border-color: #252398;">MODO</button>
+          <div class="modo-ctc-container">
+            <div style="font-size: 10px; font-weight: bold;">MODO CTC</div>
+            <div class="modo-ctc-status">AUTO</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ebilock-viewport">
+        <div class="main-wire" style="position: relative; width: 100%; min-height: 400px;">
+          <!-- CONSOLES DE OPERAÇÃO -->
+          <button class="btn-op" style="position: absolute; top: 10px; left: 12%; color: yellow; z-index: 20;">
+            CONSOLES DE OPERAÇÃO</button>
+          <!-- OP1 -->
+          <div class="workstation-group" style="position: absolute; left: 8%; top: 45px; width: 150px; height: 250px;">
+            <svg class="wire-layer"
+              style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;">
+              <path class="wire-branch" d="M30 45 L30 185" stroke="black" stroke-width="2" fill="none" />
+              <circle cx="30" cy="175" r="4" fill="black"></circle>
+              <path class="wire-branch" d="M50 55 L50 155" stroke="blue" stroke-width="2" fill="none" />
+              <circle cx="50" cy="155" r="4" fill="black"></circle>
+            </svg>
+
+            <div class="led led-panel" data-eq="op1_b"
+              style="position: absolute; left: 12%; width: 20px; top: 110px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="op1_a"
+              style="position: absolute; left: 27%; top: 110px; width: 20px; height: 20px; z-index: 2;">
+            </div>
+
+            <i class="info-workstation" style="position: absolute; top: -1px; left: 25px; width: 44px;">OP1</i>
+            <div class="plate" style="position: absolute; left: 0px; top: 60px; width: 90px;"></div>
+            <div class="workstation" style="position: absolute; left: 10px; top: 20px;">
+              <div class="monitors-wrapper">
+                <div class="crt-monitor">
+                  <div class="crt-screen" data-eq="op1_screen"></div>
+                </div>
+              </div>
+              <div class="desktop-base">
+                <div class="floppy-drive"></div>
+                <div class="power-button"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OP2 -->
+          <div class="workstation-group" style="position: absolute; left: 23%; top: 45px; width: 150px; height: 250px;">
+            <svg class="wire-layer"
+              style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;">
+              <path class="wire-branch" d="M30 45 L30 185" stroke="black" stroke-width="2" fill="none" />
+              <circle cx="30" cy="175" r="4" fill="black"></circle>
+              <path class="wire-branch" d="M50 55 L50 155" stroke="blue" stroke-width="2" fill="none" />
+              <circle cx="50" cy="155" r="4" fill="black"></circle>
+            </svg>
+
+            <div class="led led-panel" data-eq="op2_b"
+              style="position: absolute; left: 13%; width: 20px; top: 110px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="op2_a"
+              style="position: absolute; left: 27%; top: 110px; width: 20px; height: 20px; z-index: 2;">
+            </div>
+
+            <i class="info-workstation" style="position: absolute; top: -1px; left: 25px; width: 44px;">OP2</i>
+            <div class="plate" style="position: absolute; left: 0px; top: 60px; width: 90px;"></div>
+            <div class="workstation" style="position: absolute; left: 10px; top: 20px;">
+              <div class="monitors-wrapper">
+                <div class="crt-monitor">
+                  <div class="crt-screen" data-eq="op2_screen"></div>
+                </div>
+              </div>
+              <div class="desktop-base">
+                <div class="floppy-drive"></div>
+                <div class="power-button"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MANUTENÇÃO E ENGENHARIA -->
+          <button class="btn-op" style="position: absolute; top: 10px; left: 35%; color: yellow; z-index: 20;">
+            CONSOLES DE MANUTENÇÃO E ENGENHARIA</button>
+          <!-- ENG -->
+          <div class="workstation-group" style="position: absolute; left: 41%; top: 45px; width: 350px; height: 320px;">
+            <svg class="wire-layer"
+              style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;">
+              <path class="wire-branch" d="M30 45 L30 185" stroke="black" stroke-width="2" fill="none" />
+              <circle cx="30" cy="175" r="4" fill="black"></circle>
+              <path class="wire-branch" d="M50 55 L50 155" stroke="blue" stroke-width="2" fill="none" />
+              <circle cx="50" cy="155" r="4" fill="black"></circle>
+            </svg>
+
+            <div class="led led-panel" data-eq="eng_b"
+              style="position: absolute; left: 5%; width: 20px; top: 110px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="eng_a"
+              style="position: absolute; left: 12%; top: 110px; width: 20px; height: 20px; z-index: 2;">
+            </div>
+
+            <div class="led y" style="filter: brightness(1.12);"></div>
+            <i class="info-workstation" style="position: absolute; top: -1px; left: 0px; width: 90px;">ENG</i>
+            <div class="plate" style="position: absolute; left: 0px; top: 60px; width: 90px;"></div>
+            <div class="workstation" style="position: absolute; left: 0px; top: 20px;">
+              <div class="monitors-wrapper">
+                <div class="crt-monitor">
+                  <div class="crt-screen" data-eq="eng_screen"></div>
+                </div>
+                <div class="crt-monitor">
+                  <div class="crt-screen" data-eq="eng_screen"></div>
+                </div>
+              </div>
+              <div class="desktop-base">
+                <div class="floppy-drive"></div>
+                <div class="power-button"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAÍNEIS SCADA E MÓDULOS -->
+          <div class="scada-group" style="position: absolute; left: 65%; top: 45px; width: 250px; height: 200px;">
+            <div class="plate" style="top: 55px; width: 180px;"></div>
+            <div class="scada-module" style="left: 5%;">
+              <div class="module-top" data-eq="painel"></div>
+              <div class="module-bottom">
+                <div class="module-side"></div>
+                <div class="module-display"
+                  style="color: rgb(28, 2, 255); font-weight: bold; background: #8db1b3; padding: 9px 8px; flex: 1; text-align: center;">
+                  1</div>
+                <div class="module-side"></div>
+              </div>
+            </div>
+
+            <div class="scada-module" style="left: 37%">
+              <div class="module-top" data-eq="painel"></div>
+              <div class="module-bottom">
+                <div class="module-side"></div>
+                <div class="module-display"
+                  style="color: rgb(28, 2, 255); font-weight: bold; background: #8db1b3; padding: 9px 8px; flex: 1; text-align: center;">
+                  2</div>
+                <div class="module-side"></div>
+              </div>
+            </div>
+
+            <svg class="wire-layer"
+              style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;">
+              <path class="wire-branch" d="M20 105 L20 83" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M20 105 L150 105" stroke="blue" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M150 105 L150 83" stroke="blue" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M40 160 L40 105" stroke="black" stroke-width="2" fill="none" />
+              <circle cx="40" cy="155" r="4" fill="black"></circle>
+              <path class="wire-branch" d="M120 180 L120 105" stroke="blue" stroke-width="2" fill="none" />
+              <circle cx="120" cy="175" r="4" fill="black"></circle>
+            </svg>
+
+            <div class="led led-panel" data-eq="painel_a"
+              style="position: absolute; left: 12%; width: 20px; top: 120px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="painel_b"
+              style="position: absolute; left: 44%; top: 120px; width: 20px; height: 20px; z-index: 2;">
+            </div>
+          </div>
+        </div>
+
+        <!-- LABELS DOS HUBS -->
+        <i class="info-workstation" style="left: 62px; top: 185px;"> <b> SWITCH A </b></i>
+        <i class="info-workstation" style="left: 95%; top: 235px;"> <b> SWITCH B </b></i>
+
+        <div class="hubs-section">
+          <div class="bus" style="left: 62px; top: 200px; width: 95%;"></div>
+          <div class="bus" style="left: 62px; top: 220px; width: 95%;"></div>
+        </div>
+
+        <!-- MIDDLE EBILOCK 11-12 -->
+        <!-- IPU 1 -->
+        <svg width="80%" height="50%" style="position: absolute;">
+          <path class="wire-branch" d="M900 200 L900 320" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M900 320 L1000 320" stroke="blue" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M920 200 L920 260" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M920 260 L1020 260" stroke="blue" stroke-width="2" fill="none" />
+        </svg>
+
+        <div class="led led-panel" data-eq="pc104Bas_B"
+          style="background: radial-gradient(circle, #ff6666 20%, #ff0000 60%, #660000 100%); position: absolute; left: 60.2%; width: 20px; top: 600px; height: 20px; z-index: 2;"></div>
+        <div class="led led-panel" data-eq="pc104Bas_A"
+          style="position: absolute; left: 59%; top: 600px; width: 20px; height: 20px; z-index: 2;"></div>
+
+        <!-- PCL -->
+        <div class="workstation-group" style="position: absolute; left: 45%; top: 47%; width: 150px; height: 350px;">
+          <svg class="wire-layer"
+            style="position: absolute; left: -40px; top: 67px; width: 100%; height: 56px; pointer-events: none;">
+            <path class="" d="M80 360 L80 0" stroke="black" stroke-width="2" fill="none" />
+            <path class="" d="M4 360 L3 32" stroke="black" stroke-width="2" fill="none" />
+            <path class="" d="M19 2 L80 2" stroke="black" stroke-width="2" fill="none" />
+            <path class="" d="M3 55 L80 55" stroke="black" stroke-width="2" fill="none" />
+          </svg>
+
+          <i class="info-workstation" style="position: absolute; top: -1px; left: 25px; width: 44px;">PCL</i>
+          <div class="workstation" style="position: absolute; left: 25px; top: 20px;">
+            <div class="led led-panel" data-eq="pclBasL11"
+              style="position: absolute; left: -50%; width: 20px; top: 38px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="pclBasL12"
+              style="position: absolute; left: -50%; top: 90px; width: 20px; height: 20px; z-index: 2;"></div>
+            <div class="monitors-wrapper">
+              <div class="crt-monitor">
+                <div class="crt-screen" data-eq="pclBas_screen"></div>
+              </div>
+            </div>
+            <div class="desktop-base">
+              <div class="floppy-drive"></div>
+              <div class="power-button"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEU -->
+        <div class="workstation-group" style="position: absolute; left: 44%; width: 150px; height: 250px; top: 230px;">
+          <svg class="wire-layer"
+            style="position: absolute; left: -10px; top: -10px; width: 100%; height: 100%; pointer-events: none;">
+            <path class="wire-branch" d="M10 45 L10 120" stroke="black" stroke-width="2" fill="none" />
+            <path class="wire-branch" d="M10 45 30 45" stroke="black" stroke-width="2" fill="none" />
+            <path class="wire-branch" d="M10 120 L1 120" stroke="black" stroke-width="2" fill="none" />
+          </svg>
+
+          <i class="info-workstation" style="position: absolute; top: 1px; left: 25px; width: 44px;">FEU</i>
+          <div class="workstation" style="position: absolute; left: 10px; top: 20px;">
+            <div class="monitors-wrapper">
+              <div class="crt-monitor">
+                <div class="crt-screen" data-eq="feuBas"></div>
+              </div>
+            </div>
+            <div class="desktop-base">
+              <div class="floppy-drive"></div>
+              <div class="power-button"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="painel-container espelhado"
+          style="position: absolute; left:-56%; top: 30%; width: 90%; height: 300px; z-index: 1;">
+          <div class="barra-lateral"></div>
+
+          <div class="linhas-container">
+            <div class="linha">
+              <div class="grupo-ipu">
+                <div class="item-ipu">
+                  <span class="texto-corrigido">IPU</span>
+                  <div class="led led-panel" data-eq="ocBasLeste_L11"></div>
+                  <span class="texto-corrigido">L11</span>
+                </div>
+                <div class="item-ipu">
+                  <span class="texto-corrigido">IPU</span>
+                  <div class="led led-panel" data-eq="ocBasLeste_L12"></div>
+                  <span class="texto-corrigido">L12</span>
+                </div>
+              </div>
+
+              <div class="bloco bloco-oc">
+                <span class="texto-corrigido">OC<br>Bras LESTE</span>
+              </div>
+
+              <div class="bloco bloco-energia">
+                <span class="titulo-bloco texto-corrigido">ENERGIA</span>
+                <div class="layout-luzes">
+                  <span class="texto-corrigido" style="font-size: 11px;">KM1</span>
+                  <div class="coluna-luzes">
+                    <div class="led led-panel" data-eq="enLesteL11_km1"></div>
+                    <div class="led led-panel" data-eq="enLesteL12_km1"></div>
+                  </div>
+                  <div class="coluna-textos">
+                    <span class="texto-corrigido">L11</span>
+                    <span class="texto-corrigido">L12</span>
+                  </div>
+                  <div class="coluna-luzes">
+                    <div class="led led-panel" data-eq="enLesteL11_km2"></div>
+                    <div class="led led-panel" data-eq="enLesteL12_km2"></div>
+                  </div>
+                  <span class="texto-corrigido" style="font-size: 11px;">KM2</span>
+                </div>
+              </div>
+
+              <div class="bloco bloco-vent">
+                <span class="titulo-bloco texto-corrigido">VENTILADOR 2</span>
+                <div class="layout-luzes" style="gap: 15px;">
+                  <span class="texto-corrigido" style="font-size: 11px;">L11</span>
+                  <div class="led led-panel" data-eq="vent2_L11"></div>
+                  <div class="led led-panel" data-eq="vent2_L12"></div>
+                  <span class="texto-corrigido" style="font-size: 11px;">L12</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="linha">
+              <div class="grupo-ipu">
+                <div class="item-ipu">
+                  <span class="texto-corrigido">IPU</span>
+                  <div class="led led-panel" data-eq="ocBasSte_L11"></div>
+                  <span class="texto-corrigido">L11</span>
+                </div>
+                <div class="item-ipu">
+                  <span class="texto-corrigido">IPU</span>
+                  <div class="led led-panel" data-eq="ocBasSte_L12"></div>
+                  <span class="texto-corrigido">L12</span>
+                </div>
+              </div>
+
+              <div class="bloco bloco-oc">
+                <span class="texto-corrigido">OC<br>Bras STE</span>
+              </div>
+
+              <div class="bloco bloco-energia">
+                <span class="titulo-bloco texto-corrigido">ENERGIA</span>
+                <div class="layout-luzes">
+                  <span class="texto-corrigido" style="font-size: 11px;">KM1</span>
+                  <div class="coluna-luzes">
+                    <div class="led led-panel" data-eq="enSteL11_km1"></div>
+                    <div class="led led-panel" data-eq="enSteL12_km1"></div>
+                  </div>
+                  <div class="coluna-textos">
+                    <span class="texto-corrigido">L11</span>
+                    <span class="texto-corrigido">L12</span>
+                  </div>
+                  <div class="coluna-luzes">
+                    <div class="led led-panel" data-eq="enSteL11_km2"></div>
+                    <div class="led led-panel" data-eq="enSteL12_km2"></div>
+                  </div>
+                  <span class="texto-corrigido" style="font-size: 11px;">KM2</span>
+                  <span class="texto-corrigido" style="font-size: 11px; margin-left: 4px;">SAI</span>
+                </div>
+              </div>
+
+              <div class="bloco bloco-vent">
+                <span class="titulo-bloco texto-corrigido">VENTILADOR 1</span>
+                <div class="layout-luzes" style="gap: 15px;">
+                  <span class="texto-corrigido" style="font-size: 11px;">L11</span>
+                  <div class="led led-panel" data-eq="vent1_L11"></div>
+                  <div class="led led-panel" data-eq="vent1_L12"></div>
+                  <span class="texto-corrigido" style="font-size: 11px;">L12</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="linha">
+              <div class="grupo-ipu">
+                <div class="item-ipu">
+                  <span class="texto-corrigido">IPU</span>
+                  <div class="led led-panel" data-eq="ocBasNorte_L11"></div>
+                  <span class="texto-corrigido">L11</span>
+                </div>
+              </div>
+
+              <div class="bloco bloco-oc">
+                <span class="texto-corrigido">OC<br>Bras NORTE</span>
+              </div>
+
+              <div class="bloco bloco-energia">
+                <span class="titulo-bloco texto-corrigido">ENERGIA</span>
+                <div class="layout-luzes" style="gap: 10px;">
+                  <span class="texto-corrigido" style="font-size: 11px;">KM1</span>
+                  <div class="led led-panel" data-eq="enNorteL11_km1"></div>
+                  <span class="texto-corrigido" style="font-size: 11px;">L11</span>
+                  <div class="led led-panel" data-eq="enNorteL11_km1"></div>
+                  <span class="texto-corrigido" style="font-size: 11px;">KM2</span>
+                </div>
+              </div>
+
+              <div class="bloco bloco-vent">
+                <span class="titulo-bloco texto-corrigido">VENTILADOR 3</span>
+                <div class="layout-luzes" style="gap: 10px;">
+                  <span class="texto-corrigido" style="font-size: 11px;">L11</span>
+                  <div class="led led-panel" data-eq="vent3_L11"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scada-panel"
+          style="position: absolute; left: 32%; top: 30%; width: 300px; height: 300px; gap: 10px; z-index: 10;">
+          <!-- ipul11 -->
+          <div class="led led-panel" data-eq="ipuBasL11_cmd"
+            style="position: absolute; left: 30%; width: 20px; top: 17px; height: 20px; z-index: 2;"></div>
+          <div class="led led-panel" data-eq="ipuBasL11_a"
+            style="position: absolute; left: 10%; width: 20px; top: 60px; height: 20px; z-index: 2;"></div>
+          <div class="led led-panel" data-eq="ipuBasL11_b"
+            style="position: absolute; left: 50%; width: 20px; top: 60px; height: 20px; z-index: 2;"></div>
+          <div class="led led-panel" data-eq="ipuBasL11_m"
+            style="position: absolute; left: 30%; width: 20px; top: 103px; height: 20px; z-index: 2;"></div>
+          <!-- ipul12 -->
+          <div class="led led-panel" data-eq="ipuBasL12_cmd"
+            style="position: absolute; left: 30%; width: 20px; top: 140px; height: 20px; z-index: 2;"></div>
+          <div class="led led-panel" data-eq="ipuBasL12_a"
+            style="position: absolute; left: 10%; width: 20px; top: 183px; height: 20px; z-index: 2;"></div>
+          <div class="led led-panel" data-eq="ipuBasL12_b"
+            style="position: absolute; left: 50%; width: 20px; top: 183px; height: 20px; z-index: 2;"></div>
+          <div class="led led-panel" data-eq="ipuBasL12_m"
+            style="position: absolute; left: 30%; width: 20px; top: 227px; height: 20px; z-index: 2;"></div>
+          <svg viewBox="0 0 220 400" style="max-width: 200px; background-color: transparent;">
+
+            <rect x="10" y="10" width="200" height="350" fill="none" stroke="#000000" stroke-width="3" />
+            <rect x="14" y="14" width="192" height="342" fill="none" stroke="#000000" stroke-width="1" />
+
+            <text x="110" y="385" font-family="Arial, sans-serif" font-size="16" text-anchor="middle"
+              fill="#000000">EBILOCK</text>
+
+            <g id="grupo-L11">
+              <rect x="55" y="65" width="110" height="55" fill="#ffffff" stroke="#000000" stroke-width="2" />
+              <text x="110" y="98" font-family="Arial, sans-serif" font-size="16" text-anchor="middle"
+                fill="#000000">IPU L11</text>
+
+              <!-- <circle id="circulo-cmd-L11" cx="110" cy="35" r="14" fill="red" stroke="#000000" stroke-width="2"/> -->
+              <text x="85" y="40" font-family="Arial, sans-serif" font-size="14" text-anchor="end"
+                fill="#000000">CMD</text>
+
+              <!-- <circle id="circulo-A-L11" cx="30" cy="92.5" r="14" fill="yellow" stroke="#000000" stroke-width="2"/> -->
+              <text x="30" y="125" font-family="Arial, sans-serif" font-size="14" text-anchor="middle"
+                fill="#000000">A</text>
+
+              <!-- <circle id="circulo-B-L11" cx="190" cy="92.5" r="14" fill="yellow" stroke="#000000" stroke-width="2"/> -->
+              <text x="190" y="70" font-family="Arial, sans-serif" font-size="14" text-anchor="middle"
+                fill="#000000">B</text>
+
+              <!-- <circle id="circulo-m-L11" cx="110" cy="150" r="14" fill="yellow" stroke="#000000" stroke-width="2"/> -->
+              <text x="132" y="155" font-family="Arial, sans-serif" font-size="16" text-anchor="start"
+                fill="#000000">m</text>
+            </g>
+
+            <g id="grupo-L12" transform="translate(0, 165)">
+              <rect x="55" y="65" width="110" height="55" fill="#ffffff" stroke="#000000" stroke-width="2" />
+              <text x="110" y="98" font-family="Arial, sans-serif" font-size="16" text-anchor="middle"
+                fill="#000000">IPU L12</text>
+
+              <!-- <circle id="circulo-cmd-L12" cx="110" cy="35" r="14" fill="yellow" stroke="#000000" stroke-width="2"/> -->
+              <text x="85" y="40" font-family="Arial, sans-serif" font-size="14" text-anchor="end"
+                fill="#000000">CMD</text>
+
+              <!-- <circle id="circulo-A-L12" cx="30" cy="92.5" r="14" fill="yellow" stroke="#000000" stroke-width="2"/> -->
+              <text x="30" y="125" font-family="Arial, sans-serif" font-size="14" text-anchor="middle"
+                fill="#000000">A</text>
+
+              <!-- <circle id="circulo-B-L12" cx="190" cy="92.5" r="14" fill="yellow" stroke="#000000" stroke-width="2"/> -->
+              <text x="190" y="70" font-family="Arial, sans-serif" font-size="14" text-anchor="middle"
+                fill="#000000">B</text>
+
+              <!-- <circle id="circulo-m-L12" cx="110" cy="150" r="14" fill="yellow" stroke="#000000" stroke-width="2"/> -->
+              <text x="132" y="155" font-family="Arial, sans-serif" font-size="16" text-anchor="start"
+                fill="#000000">m</text>
+            </g>
+          </svg>
+
+          <div class="dev-pc-container-principal"
+            style="position: absolute; left: 150%; top: 10%; transform: translateX(-50%); z-index: 20;">
+            <style>
+              .dev-pc-container-principal,
+              .dev-pc-container-principal * {
+                box-sizing: border-box;
+              }
+
+              .dev-pc-container-principal {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background: transparent;
+                padding: 10px;
+                font-family: 'Arial', sans-serif;
+                width: fit-content;
+              }
+
+              .dev-pc-servers-row {
+                display: flex;
+                gap: 5px;
+                margin-bottom: 0;
+              }
+
+              .dev-pc-node {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+              }
+
+              .dev-pc-label {
+                text-align: center;
+                font-size: 11px;
+                font-weight: bold;
+                color: #111;
+                line-height: 1.2;
+                margin-bottom: 6px;
+              }
+
+              .dev-pc-label span {
+                font-size: 13px;
+                display: block;
+              }
+
+              .dev-pc-chassis {
+                width: 85px;
+                height: 24px;
+                background: #b0b8b0;
+                border: 2px solid #2b2b2b;
+                position: relative;
+                box-shadow: 3px 3px 0px #7a837a;
+                border-radius: 2px;
+              }
+
+              .dev-pc-chassis::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 9px;
+                background: linear-gradient(135deg, #7a837a 50%, transparent 50%);
+                border-right: 1px solid #2b2b2b;
+              }
+
+              .dev-pc-chassis::after {
+                content: '';
+                position: absolute;
+                right: 6px;
+                top: 5px;
+                width: 18px;
+                height: 10px;
+                background: repeating-linear-gradient(90deg, #2b2b2b, #2b2b2b 2px, transparent 2px, transparent 4px);
+              }
+
+              .dev-pc-chassis-dot {
+                position: absolute;
+                left: 13px;
+                top: 9px;
+                width: 3px;
+                height: 3px;
+                background-color: #2b2b2b;
+                border-radius: 50%;
+              }
+
+              .dev-pc-line-vertical {
+                width: 2px;
+                height: 18px;
+                background-color: #2b2b2b;
+              }
+
+              .dev-pc-network-capsule {
+                border: 2px solid #2b2b2b;
+                background: transparent;
+                padding: 8px 30px;
+                border-radius: 40px;
+                text-align: center;
+                font-weight: bold;
+                font-size: 11px;
+                color: #111;
+                letter-spacing: 0.5px;
+                line-height: 1.2;
+                min-width: 90px;
+                position: relative;
+              }
+
+              .dev-pc-network-capsule::before {
+                content: '';
+                position: absolute;
+                left: -215px;
+                top: 15%;
+                width: 220px;
+                height: 2px;
+                background-color: #2b2b2b;
+              }
+
+              .dev-pc-network-capsule::after {
+                content: '';
+                position: absolute;
+                left: -215px;
+                top: 85%;
+                width: 220px;
+                height: 2px;
+                background-color: #2b2b2b;
+              }
+            </style>
+
+            <div class="port-server-box" style="position: absolute; top:-50px;  z-index: 20;">
+              BAS
+            </div>
+
+            <div class="dev-pc-servers-row">
+              <div class="dev-pc-node">
+                <div class="dev-pc-label">PC 104<br><span>A</span></div>
+                <div class="dev-pc-chassis">
+                  <div class="dev-pc-chassis-dot"></div>
+                </div>
+                <div class="dev-pc-line-vertical"></div>
+              </div>
+              <div class="dev-pc-node">
+                <div class="dev-pc-label">PC 104<br><span>B</span></div>
+                <div class="dev-pc-chassis">
+                  <div class="dev-pc-chassis-dot"></div>
+                </div>
+                <div class="dev-pc-line-vertical"></div>
+              </div>
+            </div>
+            <div class="led led-panel" data-eq="ipuL11"
+              style="background-color: green; position: absolute; left: -50px; width: 20px; top: 85px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="ipuL12"
+              style="background-color: green; position: absolute; left: -50px; width: 20px; top: 115px; height: 20px; z-index: 2;">
+            </div>
+            <div class="dev-pc-network-capsule">REDE<br>ETHERNET</div>
+          </div>
+
+          <sgv class="wire-layer" width="80%" height="50%" style="position: absolute; left: 0; top: 0;">
+            <path class="wire-branch" d="M90 60 L90 320" stroke="black" stroke-width="2" fill="none" />
+            <path class="wire-branch" d="M920 60 L920 260" stroke="black" stroke-width="2" fill="none" />
+          </sgv>
+        </div>
+
+        <!-- RECREAÇÃO  WRAPPER-->
+        <div class="recreacao-wrapper"
+          style="position: absolute; left: 80%; top: 280px; width: 100px; overflow: visible;">
+          <div class="plate" style="position: absolute; left: 0px; top: 165px; width: 90px;"></div>
+          <svg class="wire-layer" width="100" height="190"
+            style="position: absolute; top: -75px; left: 0; width: 100%; height: 190px; pointer-events: none; overflow: visible;">
+            <path class="wire-branch" d="M20 190 L20 20" stroke="black" stroke-width="2" fill="none" />
+            <circle cx="20" cy="20" r="3.5" fill="black" />
+            <path class="wire-branch" d="M80 190 L80 0" stroke="black" stroke-width="2" fill="none" />
+            <circle cx="80" cy="0" r="3.5" fill="black" />
+          </svg>
+
+          <div class="led led-panel" data-eq="srv1_b"
+            style="position: absolute; left: 10%; width: 20px; top: -15px; height: 20px; z-index: 2;"></div>
+          <div class="led led-panel" data-eq="srv1_a"
+            style="position: absolute; left: 70%; top: -15px; width: 20px; height: 20px; z-index: 2;"></div>
+
+          <div class="modulo-wrapper">
+            <div class="trilhos-wrapper">
+              <div class="trilho trilho-esq"></div>
+              <div class="trilho trilho-dir"></div>
+            </div>
+            <div class="corpo-wrapper">
+              <div class="modulo-front">
+                <div class="janela-preta"></div>
+                <div class="malha malha-superior"></div>
+                <div class="malha malha-inferior"></div>
+              </div>
+              <div class="modulo-side"></div>
+            </div>
+          </div>
+          <button class="btn-os" data-eq="srv1" style="position: absolute; top: 195px; left: -2%; background-color: #cbbe02; color: #fdfcfc; z-index: 20;">
+            STATUS -
+            RTA </button>
+          <i class="info-workstation" style="position: absolute; top: 220px; left: -40px; width: 44px;">SERV</i>
+          <i class="info-workstation" style="position: absolute; top: 220px; left: 60px; width: 44px;">TRAF
+            A</i>
+        </div>
+
+        <div class="recreacao-wrapper"
+          style="position: absolute; left: 88%; top: 280px; width: 100px; overflow: visible;">
+          <div class="plate" style="position: absolute; left: 0px; top: 165px; width: 90px;"></div>
+          <svg class="wire-layer" width="100" height="190"
+            style="position: absolute; top: -75px; left: 0; width: 100%; height: 190px; pointer-events: none; overflow: visible;">
+
+            <path class="wire-branch" d="M20 170 L20 20" stroke="black" stroke-width="2" fill="none" />
+            <circle cx="20" cy="20" r="3.5" fill="black" />
+
+            <path class="wire-branch" d="M80 190 L80 0" stroke="black" stroke-width="2" fill="none" />
+            <circle cx="80" cy="0" r="3.5" fill="black" />
+          </svg>
+
+          <div class="led led-panel" data-eq="srv2_b"
+            style="position: absolute; left: 10%; width: 20px; top: -15px; height: 20px; z-index: 2;"></div>
+          <div class="led led-panel" data-eq="srv2_a"
+            style="position: absolute; left: 70%; top: -15px; width: 20px; height: 20px; z-index: 2;"></div>
+
+          <div class="modulo-wrapper">
+            <div class="trilhos-wrapper">
+              <div class="trilho trilho-esq"></div>
+              <div class="trilho trilho-dir"></div>
+            </div>
+            <div class="corpo-wrapper">
+              <div class="modulo-front">
+                <div class="janela-preta"></div>
+                <div class="malha malha-superior"></div>
+                <div class="malha malha-inferior"></div>
+              </div>
+              <div class="modulo-side"></div>
+            </div>
+          </div>
+          <button class="btn-os" data-eq="srv2" style="position: absolute; top: 195px; left: -1%; background-color: #3186e7; color: #fcfcfd; z-index: 20;">
+            STATUS -
+            RTB </button>
+          <i class="info-workstation" style="position: absolute; top: 220px; left: -10px; width: 44px;">SERV</i>
+          <i class="info-workstation" style="position: absolute; top: 220px; left: 60px; width: 44px;">TRAF
+            B</i>
+        </div>
+
+        <div class="port-server-box" style="position: absolute; left: 78%; top: 550px; z-index: 20;">
+          Port Server 1
+        </div>
+
+        <div class="port-server-box" style="position: absolute; left: 87%; top: 550px; z-index: 20;">
+          Port Server 2
+        </div>
+        <!-- WIRE LAYOUT CANTO INFERIROR DIREITO -->
+        <svg width="70%" height="60%" style="position: absolute; top: 50%; left: 30%; z-index: -0;">
+          <path class="wire-branch" d="M800 55 L800 0" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M915 55 L915 0" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M750 163 L750 70" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M770 210 L770 70" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M820 410 L820 70" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M840 470 L840 70" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M690 210 L770 210" stroke="black" stroke-width="2" fill="none" />
+          <circle cx="770" cy="210" r="4" fill="black"></circle>
+          <path class="wire-branch" d="M690 163 L750 163" stroke="black" stroke-width="2" fill="none" />
+          <circle cx="750" cy="163" r="4" fill="black"></circle>
+          <path class="wire-branch" d="M800 410 L820 410" stroke="black" stroke-width="2" fill="none" />
+          <circle cx="820" cy="410" r="4" fill="black"></circle>
+          <path class="wire-branch" d="M800 470 L840 470" stroke="black" stroke-width="2" fill="none" />
+          <circle cx="840" cy="470" r="4" fill="black"></circle>
+          <path class="wire-branch" d="M885 163 L885 70" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M905 210 L905 70" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M965 410 L965 70" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M985 470 L985 70" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M690 210 L905 210" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M690 163 L885 163" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M800 410 L965 410" stroke="black" stroke-width="2" fill="none" />
+          <path class="wire-branch" d="M800 470 L985 470" stroke="black" stroke-width="2" fill="none" />
+        </svg>
+
+        <!-- DIFUS E MÓDULOS -->
+        <div class="scada-panel" style="position: absolute; left: 63%; top: 650px; width: 250px; height: 200px;">
+          <div class="device-row">
+            <div class="rack-device">
+              <div class="top"></div>
+              <div class="front">
+                <div class="vent-panel">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="display-panel">2.4</div>
+              </div>
+              <div class="side"></div>
+            </div>
+            <div class="connect-line"></div>
+            <div class="dipus-box">
+              <div class="top"></div>
+              <div class="front">DIPUS</div>
+              <div class="side"></div>
+            </div>
+          </div>
+
+          <div class="device-row">
+            <div class="rack-device">
+              <div class="top"></div>
+              <div class="front">
+                <div class="vent-panel">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="display-panel">2.4</div>
+              </div>
+              <div class="side"></div>
+            </div>
+            <div class="connect-line"></div>
+            <div class="dipus-box">
+              <div class="top"></div>
+              <div class="front">DIFUS</div>
+              <div class="side"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scada-master-container" style="position: relative; width: 100%; min-height: 400px; top: 380px;">
+
+          <div class="scada-panel" style="position: absolute; left: 70%; top: 30%; width: 250px; height: 200px;">
+            <div class="device-row">
+              <div class="rack-device">
+                <div class="top"></div>
+                <div class="front">
+                  <div class="vent-panel">
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <div class="display-panel">2.4</div>
+                </div>
+                <div class="side"></div>
+              </div>
+              <div class="connect-line"></div>
+              <div class="dipus-box">
+                <div class="top"></div>
+                <div class="front">DIPUS</div>
+                <div class="side"></div>
+              </div>
+            </div>
+
+            <div class="device-row">
+              <div class="rack-device">
+                <div class="top"></div>
+                <div class="front">
+                  <div class="vent-panel">
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <div class="display-panel">2.4</div>
+                </div>
+                <div class="side"></div>
+              </div>
+              <div class="connect-line"></div>
+              <div class="dipus-box">
+                <div class="top"></div>
+                <div class="front">DIFUS</div>
+                <div class="side"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-container" id="interconnect-canvas"
+            style="position: absolute; left: 60%; top: 25%; width: 400px; height: 150px; transform: translateX(-50%);">
+            <div class="scada-label" style="top: 50px; left: 105px;"> EBILOCK</div>
+            <div class="scada-label" style="top: 50px; left: 285px;"> PC 104</div>
+
+            <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0; z-index: 1;">
+              <path d="M 40 25 L 170 25 L 170 52 L 245 52" fill="none" stroke="#000" stroke-width="1.5" />
+              <path d="M 40 85 L 170 85 L 170 58 L 245 58" fill="none" stroke="#000" stroke-width="1.5" />
+              <path d="M 265 52 L 280 52 L 280 25 L 410 25" fill="none" stroke="#000" stroke-width="1.5" />
+              <path d="M 265 58 L 280 58 L 280 85 L 410 85" fill="none" stroke="#000" stroke-width="1.5" />
+            </svg>
+
+            <div class="led led-panel" data-eq="ebilockLuz_a"
+              style="position: absolute; left: 30%; width: 20px; top: 15px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="ebilockLuz_b"
+              style="position: absolute; left: 30%; top: 75px; width: 20px; height: 20px; z-index: 2;">
+            </div>
+
+            <div class="led led-panel" data-eq="pc104Luz_a"
+              style="position: absolute; left: 75%; width: 20px; top: 15px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="pc104Luz_b"
+              style="background: radial-gradient(circle, #ff6666 20%, #ff0000 60%, #660000 100%); position: absolute; left: 75%; top: 75px; width: 20px; height: 20px; z-index: 2;">
+            </div>
+
+            <div class="modem-device">
+              <div class="modem-front">
+                <div class="modem-led" style="background-color: #ff3300;"></div>
+                <div class="modem-led" style="background-color: #00ff00;"></div>
+                <div class="modem-line"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="port-server-box" style="position: absolute; top:250px; left: 58%; z-index: 20;">
+            LUZ
+          </div>
+
+          <div class="scada-panel"
+            style="position: absolute; left: 42%; top: 25%; width: 160px; height: 120px; gap: 10px; z-index: 10;">
+            <div class="led led-panel" data-eq="ipuL11Luz_cmd"
+              style="position: absolute; left: 44%; width: 20px; top: 17px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="ipuL11Luz_a"
+              style="position: absolute; left: 7%; width: 20px; top: 84px; height: 20px; z-index: 2;">
+            </div>
+            <div class="led led-panel" data-eq="ipuL11Luz_b"
+              style="position: absolute; left: 80%; width: 20px; top: 84px; height: 20px; z-index: 2;">
+            </div>
+
+            <svg width="100%" height="100%" viewBox="0 0 160 120"
+              style="background-color: #d4d0c8; border: 2px solid #000; box-shadow: inset 1px 1px 0px #fff;">
+              <text x="35" y="30" font-family="Arial" font-size="11" font-weight="bold" fill="#000">CMD</text>
+              <!-- <circle cx="80" cy="26" r="12" fill="yellow" stroke="#000" stroke-width="1.5"/> -->
+
+              <rect x="35" y="50" width="90" height="35" fill="#fff" stroke="#000" stroke-width="1.5" />
+              <text x="47" y="72" font-family="Arial" font-size="12" font-weight="bold" fill="#000">IPU
+                L11</text>
+
+              <!-- <circle cx="20" cy="95" r="12" fill="yellow" stroke="#000" stroke-width="1.5"/> -->
+              <text x="16" y="115" font-family="Arial" font-size="11" font-weight="bold" fill="#000">A</text>
+
+              <text x="136" y="115" font-family="Arial" font-size="11" font-weight="bold" fill="#000">B</text>
+              <!-- <circle cx="140" cy="95" r="12" fill="yellow" stroke="#000" stroke-width="1.5"/> -->
+            </svg>
+          </div>
+          <svg width="70%" height="30%" style="position: absolute; top: 25%; left: 30%; z-index: -0;">
+            <path class="wire-branch" d="M229 85 L140 85" stroke="black" stroke-width="2" fill="none" />
+            <path class="wire-branch" d="M229 52 L140 52" stroke="black" stroke-width="2" fill="none" />
+          </svg>
+
+          <!-- FEU -->
+          <div class="workstation-group" style="position: absolute; left: 45%; width: 150px; height: 250px;">
+            <svg class="wire-layer"
+              style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;">
+              <path class="wire-branch" d="M1 45 L0 185" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M1 45 L30 45" stroke="black" stroke-width="2" fill="none" />
+            </svg>
+            <i class="info-workstation" style="position: absolute; top: 15px; left: 25px; width: 44px;">FEU</i>
+            <div class="workstation" style="position: absolute; left: 10px; top: 30px;">
+              <div class="monitors-wrapper">
+                <div class="crt-monitor">
+                  <div class="crt-screen" data-eq="feuLuz"></div>
+                </div>
+              </div>
+              <div class="desktop-base">
+                <div class="floppy-drive"></div>
+                <div class="power-button"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PCL -->
+          <div class="workstation-group"
+            style="position: absolute; left: 45%; width: 150px; height: 250px; top: 230px;">
+            <svg class="wire-layer"
+              style="position: absolute; left: 0; top: -10; width: 100%; height: 100%; pointer-events: none;">
+              <path class="wire-branch" d="M1 -30 L0 45" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M1 45 L30 45" stroke="black" stroke-width="2" fill="none" />
+            </svg>
+            <div class="led led-panel" data-eq="pclLuz" style="position: absolute; left: -9px; width: 20px; height: 20px;">
+            </div>
+            <i class="info-workstation" style="position: absolute; top: -1px; left: 25px; width: 44px;">PCL</i>
+            <div class="workstation" style="position: absolute; left: 10px; top: 20px;">
+              <div class="monitors-wrapper">
+                <div class="crt-monitor">
+                  <div class="crt-screen" data-eq="pclLuz_screen"></div>
+                </div>
+              </div>
+              <div class="desktop-base">
+                <div class="floppy-drive"></div>
+                <div class="power-button"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-panel" style="position: absolute; left: 30%; top: 18%; z-index: 20;">
+            <div class="white-text status-header">ENERGIA</div>
+            <div class="status-item led-km1">
+              <div class="text white-text">KM1</div>
+              <div class="led led-panel" data-eq="enLuz_km1"></div>
+            </div>
+            <div class="status-item led-km2">
+              <div class="text white-text">KM2</div>
+              <div class="led led-panel" data-eq="enLuz_km2"></div>
+            </div>
+            <div class="white-text status-header">VENTILADOR</div>
+            <div class="fan-status">
+              <div class="status-item led-fan-1">
+                <div class="text">1</div>
+                <div class="led led-panel" data-eq="ventLuz_1"></div>
+              </div>
+              <div class="status-item led-fan-2">
+                <div class="text">2</div>
+                <div class="led led-panel" data-eq="ventLuz_2"></div>
+              </div>
+              <div class="status-item led-fan-3">
+                <div class="text">3</div>
+                <div class="led led-panel" data-eq="ventLuz_3"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HUB MICROLOCK-->
+          <i class="info-workstation" style="position: absolute; top: -10px; left: 25px; width: 100px;">
+            SWITCH BFU </i>
+          <div class="hubs-section">
+            <div class="bus" style="left: 1%; width: 29%;"></div>
+            <svg width="70%" height="90%" style="position: absolute; top: -65%; left: 30%; z-index: -0;">
+              <path class="wire-branch" d="M0 262 L392 262" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M0 270 L400 270" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M400 270 L400 10" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M392 262 L392 2" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M392 2 L915 2" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M400 10 L800 10" stroke="black" stroke-width="2" fill="none" />
+            </svg>
+          </div>
+
+          <div class="led led-panel" data-eq="modemL13"
+            style="position: absolute; left: 140px; top: 25px; width: 20px; height: 20px; z-index: 15;">
+          </div>
+          <!-- <div class="led led-panel"
+            style="position: absolute; left: 160px; top: 25px; width: 20px; height: 20px; z-index: 15;">
+          </div> -->
+
+          <svg class="wire-layer"
+            style="position: absolute; left: 0; top: 0; width: 20%; height: 50%; pointer-events: none; z-index: 10;">
+            <path class="wire-branch" d="M150 5 L150 60" stroke="black" stroke-width="2" fill="none" />
+            <!-- <PATH class="wire-branch" d="M170 5 L170 60" stroke="blue" stroke-width="2" fill="none" /> -->
+            <circle cx="150" cy="5" r="4" fill="black"></circle>
+            <!-- <circle cx="170" cy="5" r="4" fill="black"></circle> -->
+          </svg>
+
+          <!-- DIAG MICROLOCK L13 -->
+          <div class="diag-panel"
+            STYLE="position: absolute; left: 8%; top: 15%; width: 300px; height: 160px; z-index: 20;">
+            <div class="panel-title">DIAG MICROLOCK L13</div>
+
+            <div class="diag-grid">
+              <div></div>
+              <div class="header-cell">Ativo</div>
+              <div class="header-cell">Standby</div>
+              <div class="header-cell">Offline</div>
+
+              <div class="label-cell">MLK A</div>
+              <div class="led-cell">
+                <div class="led led-red" style="background: radial-gradient(circle at 35% 35%, #f66666 20%, #f04040 93%, #fd0101 90%);"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" data-eq="mlkAOffline"></div>
+              </div>
+
+              <div class="label-cell">MLK B</div>
+              <div class="led-cell">
+                <div class="led led-red"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" style="background: radial-gradient(circle at 35% 35%, #f66666 20%, #f04040 93%, #fd0101 90%);"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" data-eq="mlkBOffline"></div>
+              </div>
+
+              <div class="label-cell">MLK A1</div>
+              <div class="led-cell">
+                <div class="led led-red" style="background: radial-gradient(circle at 35% 35%, #f66666 20%, #f04040 93%, #fd0101 90%);"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" data-eq="mlkA1Offline"></div>
+              </div>
+
+              <div class="label-cell">MLK B1</div>
+              <div class="led-cell">
+                <div class="led led-red"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" style="background: radial-gradient(circle at 35% 35%, #f66666 20%, #f04040 93%, #fd0101 90%);"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" data-eq="mlkB1Offline"></div>
+              </div>
+
+              <div class="label-cell">MLK A2</div>
+              <div class="led-cell">
+                <div class="led led-red" style="background: radial-gradient(circle at 35% 35%, #f66666 20%, #f04040 93%, #fd0101 90%);"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" data-eq="mlkA2Offline"></div>
+              </div>
+
+              <div class="label-cell">MLK B2</div>
+              <div class="led-cell">
+                <div class="led led-red"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" style="background: radial-gradient(circle at 35% 35%, #f66666 20%, #f04040 93%, #fd0101 90%);"></div>
+              </div>
+              <div class="led-cell">
+                <div class="led led-red" data-eq="mlkB2Offline"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="workstation-group" style="position: absolute; left: 1%; top: 25%; width: 150px; height: 250px;">
+            <svg class="wire-layer"
+              style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;">
+              <path class="wire-branch" d="M50 30 L50 150" stroke="black" stroke-width="2" fill="none" />
+              <PATH class="wire-branch" d="M50 150 L120 150" stroke="blue" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M120 150 L120 35" stroke="blue" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M30 45 L30 170" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M30 170 L150 170" stroke="black" stroke-width="2" fill="none" />
+              <path class="wire-branch" d="M150 170 L150 35" stroke="black" stroke-width="2" fill="none" />
+            </svg>
+            <div class="led led-panel" data-eq="pclL13_a"
+              style="position: absolute; left: 20px; top: 100px; width: 20px; height: 20px;"></div>
+            <div class="led led-panel" data-eq="pclL13_b"
+              style="position: absolute; left: 40px; top: 100px; width: 20px; height: 20px;"></div>
+
+            <i class="info-workstation" style="position: absolute; top: -5px; left: 25px; width: 44px;">PCL
+              L13</i>
+            <div class="plate" style="position: absolute; left: 0px; top: 60px; width: 90px;"></div>
+            <div class="workstation" style="position: absolute; left: 10px; top: 20px;">
+              <div class="monitors-wrapper">
+                <div class="crt-monitor">
+                  <div class="crt-screen" data-eq="pclL13_screen"></div>
+                </div>
+              </div>
+              <div class="desktop-base">
+                <div class="floppy-drive"></div>
+                <div class="power-button"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="logs.js"></script>
+  <script src="test_leds.js"></script>
+  <script>
+
+    const leds = document.querySelectorAll(".led");
+    const screens = document.querySelectorAll(".crt-scree")
+    const content = document.getElementById('eventContent');
+
+    let indiceAtual = 0;
+
+    function atualizarLed(led, status) {
+      led.dataset.status = status;
+
+      if (status === "falha") {
+        led.style.background =
+          "radial-gradient(circle, #ff6666 20%, #ff0000 60%, #660000 100%)";
+        led.style.boxShadow = "0 0 15px red";
+      } else {
+        led.style.background =
+          "radial-gradient(circle, #b8b8b8 40%, #555 100%)";
+        led.style.boxShadow = "none";
+      }
+    }
+
+    const regras = [
+      {
+        equipamentos: ["op1_a", "op1_b"],
+        tela: "op1_screen"
+      },
+      {
+        equipamentos: ["op2_a", "op2_b"],
+        tela: "op2_screen"
+      },
+      {
+        equipamentos: ["eng_a", "eng_b"],
+        tela: "eng_screen"
+      },
+      {
+        equipamentos: ["painel_a", "painel_b"],
+        tela: "painel"
+      },
+      {
+        equipamentos: ["pclLuz"],
+        tela: "pclLuz_screen"
+      },
+      {
+        equipamentos: ["pclL13_a", "pclL13_b"],
+        tela: "pclL13_screen"
+      },
+      {
+        equipamentos: ["pclBasL11", "pclBasL12"],
+        tela: "pclBas_screen"
+      },
+      {
+        equipamentos: ["srv1_a", "srv1_b"],
+        tela: "srv1"
+      },
+      {
+        equipamentos: ["srv2_a", "srv2_b"],
+        tela: "srv2"
+      },
+      {
+        equipamentos: ["ipuBasL11_cmd", "ipuBasL11_a", "ipuBasL11_b", "ipuBasL11_m", "ipuBasL12_cmd", "ipuBasL12_a", "ipuBasL12_b", "ipuBasL12_m"],
+        tela: "feuBas"
+      },
+      {
+        equipamentos: ["ipuL11Luz_cmd", "ipuL11Luz_a", "ipuL11Luz_b"],
+        tela: "feuLuz"
+      }
+    ];
+
+    function verificarRegras() {
+      regras.forEach(regra => {
+
+        const todosEmFalha = regra.equipamentos.every(eq =>
+          [...leds].some(
+            led => led.dataset.eq === eq &&
+              led.dataset.status === "falha"
+          )
+        );
+
+        const telas = document.querySelectorAll(`[data-eq="${regra.tela}"]`);
+
+        if (todosEmFalha) {
+          telas.forEach(tela => {
+            if (!tela.dataset.corOriginal) {
+              tela.dataset.corOriginal = window.getComputedStyle(tela).background;
+            }
+            tela.style.background = "black";
+          });
+        } else {
+          telas.forEach(tela => {
+            if (tela.dataset.corOriginal) {
+              tela.style.background = tela.dataset.corOriginal;
+            }
+          });
+        }
+
+      });
+    }
+
+    function processarProximaFalha() {
+
+      const evento = falhas[indiceAtual];
+      const agora = new Date();
+
+      const log = document.getElementById("eventBody");
+      log.innerHTML += `
+        <tr class="event-row" ${evento.status == "falha" ? "style='color: red; font-weight: bold;'" : ""}>
+          <td class="col-date">${agora.toLocaleString('pt-BR')}</td>
+          <td class="col-ind">IND:</td>
+          <td class="col-desc">${evento.desc}</td>
+          <td class="col-dom">DOM:</td>
+          <td class="col-cdv">${evento.eq}</td>
+          <td class="col-cdv">${evento.status}</td>
+        </tr>
+      `;
+
+      content.scrollTop = content.scrollHeight;
+
+      leds.forEach(led => {
+        if (led.dataset.eq === evento.eq) {
+          atualizarLed(led, evento.status);
+        }
+      });
+
+      indiceAtual++;
+
+      verificarRegras();
+
+      if (indiceAtual == falhas.length) {
+        indiceAtual = 0;
+      }
+    }
+
+    // inicia imediatamente
+    processarProximaFalha();
+
+    // continua a cada 5 segundos
+    setInterval(processarProximaFalha, 2000);
+
+  </script>
+</body>
+
+</html>
