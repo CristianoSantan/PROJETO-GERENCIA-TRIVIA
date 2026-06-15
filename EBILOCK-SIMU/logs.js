@@ -15,16 +15,6 @@ const falhas = [
     status: "falha"
   },
   {
-    desc: "Falha de comunicação",
-    eq: "srv1_a",
-    status: "falha"
-  },
-  {
-    desc: "Falha de comunicação",
-    eq: "srv1_b",
-    status: "falha"
-  },
-  {
     desc: "Detectora DESOCUPADO",
     eq: "3E06T",
     status: "normal"
@@ -83,6 +73,16 @@ const falhas = [
     desc: "Falha de comunicação",
     eq: "painel_b",
     status: "normal"
+  },
+  {
+    desc: "Falha de comunicação",
+    eq: "srv1_a",
+    status: "falha"
+  },
+  {
+    desc: "Falha de comunicação",
+    eq: "srv1_b",
+    status: "falha"
   },
   {
     desc: "Trecho DESOCUPADO",
